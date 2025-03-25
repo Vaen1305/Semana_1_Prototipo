@@ -1,7 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-
+using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [Header("Configuración")]
@@ -9,12 +9,22 @@ public class PlayerController : MonoBehaviour
     [SerializeField] private Vector2 direction = Vector2.right;
     [SerializeField] private GameObject bodyPrefab;
     [SerializeField] private ScoreManager scoreManager;
+    [SerializeField] private GameManager gameManager;
 
     private List<Transform> bodySegments = new List<Transform>();
     private float moveTimer;
 
     private void Start()
     {
+        if (gameManager == null)
+        {
+            gameManager = FindObjectOfType<GameManager>();
+            if (gameManager == null)
+            {
+                Debug.LogError("GameManager no encontrado en la escena.");
+            }
+        }
+
         bodySegments.Add(transform);
     }
 
@@ -47,20 +57,31 @@ public class PlayerController : MonoBehaviour
 
     private void Move()
     {
+        Vector2 prevPosition = transform.position;
         transform.position = new Vector2(
             Mathf.Round(transform.position.x + direction.x),
             Mathf.Round(transform.position.y + direction.y)
         );
 
-        for (int i = bodySegments.Count - 1; i > 0; --i)
+        for (int i = bodySegments.Count - 1; i > 0; i--)
         {
             bodySegments[i].position = bodySegments[i - 1].position;
+        }
+
+        if (bodySegments.Count > 1)
+        {
+            bodySegments[1].position = prevPosition;
         }
     }
 
     private void GrowSnake()
     {
-        GameObject newSegment = Instantiate(bodyPrefab);
+        Transform lastSegment = bodySegments[bodySegments.Count - 1];
+
+        Vector2 newPosition = lastSegment.position - (Vector3)direction;
+
+        GameObject newSegment = Instantiate(bodyPrefab, newPosition, Quaternion.identity);
+
         bodySegments.Add(newSegment.transform);
     }
 
@@ -68,14 +89,31 @@ public class PlayerController : MonoBehaviour
     {
         if (other.CompareTag("Food"))
         {
-            scoreManager.UpdateScore(10);
+            scoreManager.UpdateScore(1);
             Destroy(other.gameObject);
             GrowSnake();
-            GameManager.Instance.GenerateFood();
+
+            if (gameManager != null)
+            {
+                StartCoroutine(GenerateFoodWithDelay());
+            }
         }
         else if (other.CompareTag("Wall") || other.CompareTag("Body"))
         {
-            GameManager.Instance.EndGame();
+            if (gameManager != null)
+            {
+                gameManager.EndGame();
+            }
+            else
+            {
+                Debug.LogError("GameManager no está asignado. No se puede llamar a EndGame().");
+            }
         }
+    }
+
+    private IEnumerator GenerateFoodWithDelay()
+    {
+        yield return new WaitForSeconds(0.1f);
+        if (gameManager != null) gameManager.GenerateFood();
     }
 }

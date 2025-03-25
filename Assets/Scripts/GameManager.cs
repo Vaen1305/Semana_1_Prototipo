@@ -4,18 +4,11 @@ using UnityEngine;
 
 public class GameManager : MonoBehaviour
 {
-    public static GameManager Instance { get; private set; }
-
     [Header("Configuración")]
     [SerializeField] private GameObject foodPrefab;
-    [SerializeField] private Vector2 limits = new Vector2(-8, 8);
+    [SerializeField] private Vector2 limits = new Vector2(8, 4);
     [SerializeField] private LayerMask obstacleLayer;
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this) Destroy(gameObject);
-        else Instance = this;
-    }
+    [SerializeField] private UI_Manager uiManager;
 
     public void GenerateFood()
     {
@@ -34,12 +27,15 @@ public class GameManager : MonoBehaviour
             maxAttempts--;
         } while (!validPosition && maxAttempts > 0);
 
-        if (validPosition) Instantiate(foodPrefab, spawnPos, Quaternion.identity);
+        if (validPosition)
+        {
+            Instantiate(foodPrefab, spawnPos, Quaternion.identity);
+        }
     }
 
     public void EndGame()
     {
         Time.timeScale = 0;
-        UI_Manager.Instance.ShowGameOver();
+        uiManager.ShowGameOver();
     }
 }

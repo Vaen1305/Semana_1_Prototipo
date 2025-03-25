@@ -2,21 +2,14 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using TMPro;
+using UnityEngine.SceneManagement;
 
-public class UI_Manager : MonoBehaviour
+public class UI_Manager : SingletonPersistent<UI_Manager>
 {
-    public static UI_Manager Instance { get; private set; }
-
     [Header("UI Elements")]
     [SerializeField] private TMP_Text CurrentScoreText;
     [SerializeField] private TMP_Text HighScoreText;
     [SerializeField] private GameObject gameOverPanel;
-
-    private void Awake()
-    {
-        if (Instance != null && Instance != this) Destroy(gameObject);
-        else Instance = this;
-    }
 
     public void UpdateText(int currentScore)
     {
@@ -30,6 +23,14 @@ public class UI_Manager : MonoBehaviour
 
     public void ShowGameOver()
     {
+        Time.timeScale = 0;
         gameOverPanel.SetActive(true);
+    }
+
+    public void ResetGame()
+    {
+        Time.timeScale = 1;
+        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        gameOverPanel.SetActive(false);
     }
 }
